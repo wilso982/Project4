@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Scanner;
 
 final class ChatClient {
     private ObjectInputStream sInput;
@@ -78,11 +79,34 @@ final class ChatClient {
      */
     public static void main(String[] args) {
         // Get proper arguments and override defaults
-
+        String username = "Anonymous";
+        int portNumber = 1500;
+        String serverAddress = "localHost";
+        if  (args.length == 1) {
+            username = args[0];
+            portNumber = 1500;
+            serverAddress = "localHost";
+        } else if  (args.length == 2) {
+            username = args[0];
+            portNumber = Integer.parseInt(args[1]);
+            serverAddress = "localHost";
+        } else if  (args.length == 3) {
+            username = args[0];
+            portNumber = Integer.parseInt(args[1]);
+            serverAddress = args[2];
+        }
         // Create your client and start it
-        ChatClient client = new ChatClient("localhost", 1500, "CS 180 Student");
+        ChatClient client = new ChatClient(serverAddress, portNumber, username);
         client.start();
 
+        boolean running = true;
+        while (running) {
+            Scanner input = new Scanner(System.in);
+            String message = input.nextLine();
+            System.out.println(message);
+            client.sendMessage(new ChatMessage());
+            running = false;
+        }
         // Send an empty message to the server
         client.sendMessage(new ChatMessage());
     }
@@ -95,11 +119,13 @@ final class ChatClient {
      */
     private final class ListenFromServer implements Runnable {
         public void run() {
-            try {
-                String msg = (String) sInput.readObject();
-                System.out.print(msg);
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
+            while (true) {
+                try {
+                    String msg = (String) sInput.readObject();
+                    System.out.print(msg);
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
