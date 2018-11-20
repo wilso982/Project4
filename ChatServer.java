@@ -3,13 +3,20 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 final class ChatServer {
     private static int uniqueId = 0;
     private final List<ClientThread> clients = new ArrayList<>();
     private final int port;
+    Date date = new Date();
+    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+    String time = sdf.format(date);
+
 
 
     private ChatServer(int port) {
@@ -21,6 +28,7 @@ final class ChatServer {
      * Right now it just creates the socketServer and adds a new ClientThread to a list to be handled
      */
     private void start() {
+        System.out.println(time + " Server waiting for clients on port " + port);
         try {
             ServerSocket serverSocket = new ServerSocket(port);
             while (true) {
@@ -33,6 +41,19 @@ final class ChatServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    synchronized private void broadcast(String message) {
+        message = time + " " + message + "\n";
+
+        for (int i = 0; i < clients.size(); i++) {
+            clients.get(i).writeMessage(message);
+        }
+        System.out.print(message);
+    }
+
+    synchronized private void remove(int id) {
+        clients.remove(id);
     }
 
     /*
@@ -58,6 +79,29 @@ final class ChatServer {
         String username;
         ChatMessage cm;
 
+        private boolean writeMessage(String msg) {
+            if (socket.isConnected()) {
+                try {
+                    sOutput.writeObject(msg);
+                } catch (IOException e) {
+                    return false;
+                }
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        private void close() {
+            try {
+                socket.close();
+                sInput.close();
+                sOutput.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         private ClientThread(Socket socket, int id) {
             this.id = id;
             this.socket = socket;
@@ -76,19 +120,26 @@ final class ChatServer {
         @Override
         public void run() {
             // Read the username sent to you by client
-            try {
-                cm = (ChatMessage) sInput.readObject();
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-            System.out.println(username + ": Ping");
 
+            System.out.println(time + " " + username + ": just connected.");
+            System.out.println(time + " Server waiting for clients on port " + port);
 
             // Send message back to the client
-            try {
-                sOutput.writeObject("Pong");
-            } catch (IOException e) {
-                e.printStackTrace();
+            while (true) {
+                try {
+                    cm = (ChatMessage) sInput.readObject();
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+
+                if (cm.getType() == 0) {
+                    broadcast(username + ": " + cm.getMessage());
+                } else if (cm.getType() == 1) {
+                    System.out.println(time + " " + username + " disconnected with a LOGOUT message.");
+                    remove(id);
+                    close();
+                    return;
+                }
             }
         }
     }

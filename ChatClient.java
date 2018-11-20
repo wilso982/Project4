@@ -2,12 +2,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Scanner;
 
 final class ChatClient {
-    private ObjectInputStream sInput;
-    private ObjectOutputStream sOutput;
-    private Socket socket;
+    private static ObjectInputStream sInput;
+    private static ObjectOutputStream sOutput;
+    private static Socket socket;
 
     private final String server;
     private final String username;
@@ -99,16 +100,24 @@ final class ChatClient {
         ChatClient client = new ChatClient(serverAddress, portNumber, username);
         client.start();
 
-        boolean running = true;
-        while (running) {
+        while (true) {
             Scanner input = new Scanner(System.in);
             String message = input.nextLine();
-            System.out.println(message);
-            client.sendMessage(new ChatMessage());
-            running = false;
+            if (message.equalsIgnoreCase("/logout")) {
+                client.sendMessage(new ChatMessage(message, 1));
+                System.out.println("Server has closed the connection.");
+                try {
+                    sInput.close();
+                    sOutput.close();
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return;
+            }
+            client.sendMessage(new ChatMessage(message, 0));
         }
         // Send an empty message to the server
-        client.sendMessage(new ChatMessage());
     }
 
 
@@ -121,8 +130,12 @@ final class ChatClient {
         public void run() {
             while (true) {
                 try {
-                    String msg = (String) sInput.readObject();
-                    System.out.print(msg);
+                    try {
+                        String msg = (String) sInput.readObject();
+                        System.out.print(msg);
+                    } catch (SocketException e) {
+                        return;
+                    }
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
                 }
