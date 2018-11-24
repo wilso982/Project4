@@ -15,7 +15,7 @@ final class ChatServer {
     private final int port;
     Date date = new Date();
     SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-    String time = sdf.format(date);
+    private static String badwords;
 
 
 
@@ -28,7 +28,7 @@ final class ChatServer {
      * Right now it just creates the socketServer and adds a new ClientThread to a list to be handled
      */
     private void start() {
-        System.out.println(time + " Server waiting for clients on port " + port);
+        System.out.println(sdf.format(date) + " Server waiting for clients on port " + port);
         try {
             ServerSocket serverSocket = new ServerSocket(port);
             while (true) {
@@ -44,7 +44,11 @@ final class ChatServer {
     }
 
     synchronized private void broadcast(String message) {
-        message = time + " " + message + "\n";
+       // time =  sdf.format(date);
+        date = new Date();
+        ChatFilter filter = new ChatFilter(badwords);
+        message = filter.filter(message);
+        message = sdf.format(date) + " " + message + "\n";
 
         for (int i = 0; i < clients.size(); i++) {
             clients.get(i).writeMessage(message);
@@ -62,7 +66,18 @@ final class ChatServer {
      *  If the port number is not specified 1500 is used
      */
     public static void main(String[] args) {
-        ChatServer server = new ChatServer(1500);
+        int port = 1500;
+        badwords = "badwords.txt";
+
+        if (args.length == 1){
+            port = Integer.parseInt(args[0]);
+        }
+        else if (args.length == 2){
+            port = Integer.parseInt(args[0]);
+            badwords = args[1];
+        }
+
+        ChatServer server = new ChatServer(port);
         server.start();
     }
 
@@ -120,9 +135,9 @@ final class ChatServer {
         @Override
         public void run() {
             // Read the username sent to you by client
-
-            System.out.println(time + " " + username + ": just connected.");
-            System.out.println(time + " Server waiting for clients on port " + port);
+            date = new Date();
+            System.out.println(sdf.format(date) + " " + username + ": just connected.");
+            System.out.println(sdf.format(date) + " Server waiting for clients on port " + port);
 
             // Send message back to the client
             while (true) {
@@ -135,7 +150,7 @@ final class ChatServer {
                 if (cm.getType() == 0) {
                     broadcast(username + ": " + cm.getMessage());
                 } else if (cm.getType() == 1) {
-                    System.out.println(time + " " + username + " disconnected with a LOGOUT message.");
+                    System.out.println(sdf.format(date) + " " + username + " disconnected with a LOGOUT message.");
                     remove(id);
                     close();
                     return;
