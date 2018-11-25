@@ -1,3 +1,4 @@
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -14,6 +15,7 @@ final class ChatClient {
     private final String server;
     private final String username;
     private final int port;
+    private static boolean sameUser = false;
 
     private ChatClient(String server, int port, String username) {
         this.server = server;
@@ -104,6 +106,19 @@ final class ChatClient {
         Scanner input = new Scanner(System.in);
 
         String message = "";
+
+        if (sameUser) {
+            System.out.println("Server has closed the connection.");
+            try {
+                sInput.close();
+                sOutput.close();
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+
         while (input.hasNextLine()) {
             message = input.nextLine();
 
@@ -135,14 +150,14 @@ final class ChatClient {
                     message = message.substring(end);
 
                     client.sendMessage(new ChatMessage(message, 3, recipient));
+                } else {
+                    client.sendMessage(new ChatMessage(message, 0));
                 }
-                else{client.sendMessage(new ChatMessage(message, 0));}
-
             }
             else{
                 client.sendMessage(new ChatMessage(message, 0));
             }
-           // client.sendMessage(new ChatMessage(message, 0));
+            // client.sendMessage(new ChatMessage(message, 0));
         }
         System.out.println("You have entered a null value, please restart to continue chatting.");
         client.sendMessage(new ChatMessage(message, 1));
@@ -174,7 +189,8 @@ final class ChatClient {
                         return;
                     }
                 } catch (IOException | ClassNotFoundException e) {
-                    e.printStackTrace();
+                    sameUser = true;
+                    return;
                 }
             }
         }

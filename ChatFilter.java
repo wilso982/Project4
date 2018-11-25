@@ -4,39 +4,42 @@ import java.io.FileReader;
 import java.util.ArrayList;
 
 public class ChatFilter {
-    ArrayList badWords = new ArrayList();
+    ArrayList<String> badWords = new ArrayList<>();
 
     public ChatFilter(String badWordsFileName) {
 
         String line;
         File file = new File(badWordsFileName);
-        try(
-        FileReader fr = new FileReader(file);
+        try (
+                FileReader fr = new FileReader(file);
 
-        BufferedReader br = new BufferedReader(fr);
+                BufferedReader br = new BufferedReader(fr);
         ){
             while ((line = br.readLine()) != null){
                 badWords.add(line);
             }
-        }
-        catch(Exception e){
-            System.err.println(e);
+        } catch(Exception e){
+            e.printStackTrace();
         }
     }
 
     //TODO: Make filter nicer like the other one and make it not case sensitive
 
     public String filter(String msg) {
+        String messageArray[] = msg.split(" ");
         String censor = "";
         String badWord;
         if (!badWords.isEmpty()) {
             for (int i = 0; i < badWords.size(); i++) {
-                if (msg.toLowerCase().contains(badWords.get(i).toString().toLowerCase())){
-                     badWord = badWords.get(i).toString();
-                    for (int j = 0; j < badWord.length(); j++) {
-                        censor += "x";
+                for (int j = 1; j < messageArray.length; j++) {
+                    msg = msg.replaceAll(messageArray[j], messageArray[j].toLowerCase());
+                    if (msg.contains(badWords.get(i))) {
+                        badWord = badWords.get(i);
+                        for (int z = 0; z < badWord.length(); z++) {
+                            censor += "*";
+                        }
+                        msg = msg.replaceAll(badWord, censor);
                     }
-                   msg = msg.replaceAll(badWord,censor);
                 }
             }
         }

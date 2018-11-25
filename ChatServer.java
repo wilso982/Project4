@@ -42,21 +42,27 @@ final class ChatServer {
             e.printStackTrace();
         }
     }
-    synchronized private void directMessage(String message,String username) {
+    synchronized private void directMessage(String message, String username) {
         date = new Date();
         ChatFilter filter = new ChatFilter(badwords);
+        Boolean isOnline = false;
         message = filter.filter(message);
         message = sdf.format(date) + " " + message + "\n";
 
         for (int i = 0; i < clients.size() ; i++) {
-            if (clients.get(i).username == username){
+            if (clients.get(i).username.equals(username)){
+                isOnline = true;
                 clients.get(i).writeMessage(message);
             }
+        }
+        if (!isOnline) {
+            System.out.println(sdf.format(date) + " The user " + username + " is not online.");
+            //I have no idea how to broadcast a message to a single user (the user who called the /msg, but there is no
+            //user with the username inputted.
         }
     }
 
     synchronized private void broadcast(String message) {
-
         date = new Date();
         ChatFilter filter = new ChatFilter(badwords);
         message = filter.filter(message);
@@ -68,8 +74,12 @@ final class ChatServer {
         System.out.print(message);
     }
 
-    synchronized private void remove(int id) {
-        clients.remove(id);
+    synchronized private void remove(int idToRemove) {
+        for (int i = 0; i < clients.size(); i++) {
+            if (clients.get(i).id == idToRemove) {
+                clients.remove(i);
+            }
+        }
     }
 
     /*
@@ -148,6 +158,17 @@ final class ChatServer {
         public void run() {
             // Read the username sent to you by client
             date = new Date();
+            if (clients.size() > 1) {
+                for (int i = 0; i < clients.size(); i++) {
+                    if (clients.get(i).username.equals(username)) {
+                        System.out.println(sdf.format(date) + " " + username + ": tried connecting," +
+                                " but someone with the username already exists.");
+                        remove(id);
+                        close();
+                        return;
+                    }
+                }
+            }
             System.out.println(sdf.format(date) + " " + username + ": just connected.");
             System.out.println(sdf.format(date) + " Server waiting for clients on port " + port);
 
@@ -156,7 +177,7 @@ final class ChatServer {
                 try {
                     cm = (ChatMessage) sInput.readObject();
                 } catch (IOException | ClassNotFoundException e) {
-                    System.out.println(time + " " + username + " disconnected without a LOGOUT message.");
+                    System.out.println(sdf.format(date) + " " + username + " disconnected without a LOGOUT message.");
                     remove(id);
                     close();
                     return;
@@ -169,8 +190,7 @@ final class ChatServer {
                     remove(id);
                     close();
                     return;
-                }
-                else if (cm.getType() == 2){
+                } else if (cm.getType() == 2) {
                     if (clients.size() > 1) {
                         for (int i = 0; i < clients.size(); i++) {
                             if (id != clients.get(i).id) {
@@ -178,12 +198,11 @@ final class ChatServer {
                             }
                         }
                     }
-                    else{
-                        directMessage("There are no other users online",username);
+                    else {
+                        directMessage("There are no other users online.", username);
                     }
 
-                }
-                else if (cm.getType() == 3){
+                } else if (cm.getType() == 3) {
                     directMessage(username + ": " + cm.getMessage(), cm.getRecipient());
                 }
             }
