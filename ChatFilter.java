@@ -24,14 +24,14 @@ public class ChatFilter {
         }
     }
 
+    //TODO: Make filter nicer like the other one and make it not case sensitive
 
     public String filter(String msg) {
         String censor = "";
         String badWord;
-        String temp1,temp2;
         if (!badWords.isEmpty()) {
             for (int i = 0; i < badWords.size(); i++) {
-                if (msg.contains(badWords.get(i).toString())){
+                if (msg.toLowerCase().contains(badWords.get(i).toString().toLowerCase())){
                      badWord = badWords.get(i).toString();
                     for (int j = 0; j < badWord.length(); j++) {
                         censor += "x";

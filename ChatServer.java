@@ -42,9 +42,21 @@ final class ChatServer {
             e.printStackTrace();
         }
     }
+    synchronized private void directMessage(String message,String username) {
+        date = new Date();
+        ChatFilter filter = new ChatFilter(badwords);
+        message = filter.filter(message);
+        message = sdf.format(date) + " " + message + "\n";
+
+        for (int i = 0; i < clients.size() ; i++) {
+            if (clients.get(i).username == username){
+                clients.get(i).writeMessage(message);
+            }
+        }
+    }
 
     synchronized private void broadcast(String message) {
-       // time =  sdf.format(date);
+
         date = new Date();
         ChatFilter filter = new ChatFilter(badwords);
         message = filter.filter(message);
@@ -154,6 +166,22 @@ final class ChatServer {
                     remove(id);
                     close();
                     return;
+                }
+                else if (cm.getType() == 2){
+                    if (clients.size() > 1) {
+                        for (int i = 0; i < clients.size(); i++) {
+                            if (id != clients.get(i).id) {
+                                directMessage(clients.get(i).username, username);
+                            }
+                        }
+                    }
+                    else{
+                        directMessage("There are no other users online",username);
+                    }
+
+                }
+                else if (cm.getType() == 3){
+                    directMessage(username + ": " + cm.getMessage(), cm.getRecipient());
                 }
             }
         }

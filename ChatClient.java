@@ -115,7 +115,30 @@ final class ChatClient {
                 }
                 return;
             }
-            client.sendMessage(new ChatMessage(message, 0));
+            else if(message.equalsIgnoreCase("/list")){
+                client.sendMessage(new ChatMessage(message,2));
+            }
+            else if (message.length() > 4) {
+                if (message.substring(0, 4).equalsIgnoreCase("/msg")) {
+                    String recipient;
+                    int end = 4;
+                    for (int i = 4; i < message.length(); i++) {
+                        if (message.charAt(i) == ' ') {
+                            end = i;
+                        }
+                    }
+                    recipient = message.substring(4, end);
+                    message = message.substring(end);
+
+                    client.sendMessage(new ChatMessage(message, 3, recipient));
+                }
+                else{client.sendMessage(new ChatMessage(message, 0));}
+
+            }
+            else{
+                client.sendMessage(new ChatMessage(message, 0));
+            }
+           // client.sendMessage(new ChatMessage(message, 0));
         }
         // Send an empty message to the server
     }
