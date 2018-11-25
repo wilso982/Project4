@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Scanner;
@@ -28,15 +29,15 @@ final class ChatClient {
         try {
             socket = new Socket(server, port);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("There is no server to connect to.");
         }
 
         // Create your input and output streams
         try {
             sInput = new ObjectInputStream(socket.getInputStream());
             sOutput = new ObjectOutputStream(socket.getOutputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException | NullPointerException e) {
+            return false;
         }
 
         // This thread will listen from the server for incoming messages
@@ -100,9 +101,12 @@ final class ChatClient {
         ChatClient client = new ChatClient(serverAddress, portNumber, username);
         client.start();
 
-        while (true) {
-            Scanner input = new Scanner(System.in);
-            String message = input.nextLine();
+        Scanner input = new Scanner(System.in);
+
+        String message = "";
+        while (input.hasNextLine()) {
+            message = input.nextLine();
+
             if (message.equalsIgnoreCase("/logout")) {
                 client.sendMessage(new ChatMessage(message, 1));
                 System.out.println("Server has closed the connection.");
@@ -139,6 +143,16 @@ final class ChatClient {
                 client.sendMessage(new ChatMessage(message, 0));
             }
            // client.sendMessage(new ChatMessage(message, 0));
+        }
+        System.out.println("You have entered a null value, please restart to continue chatting.");
+        client.sendMessage(new ChatMessage(message, 1));
+        System.out.println("Server has closed the connection.");
+        try {
+            sInput.close();
+            sOutput.close();
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         // Send an empty message to the server
     }
