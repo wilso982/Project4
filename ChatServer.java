@@ -42,24 +42,20 @@ final class ChatServer {
             e.printStackTrace();
         }
     }
-    synchronized private void directMessage(String message, String username) {
+    synchronized private boolean directMessage(String message, String username) {
         date = new Date();
         ChatFilter filter = new ChatFilter(badwords);
-        Boolean isOnline = false;
+
         message = filter.filter(message);
         message = sdf.format(date) + " " + message + "\n";
 
         for (int i = 0; i < clients.size() ; i++) {
             if (clients.get(i).username.equals(username)){
-                isOnline = true;
                 clients.get(i).writeMessage(message);
+                return true;
             }
         }
-        if (!isOnline) {
-            System.out.println(sdf.format(date) + " The user " + username + " is not online.");
-            //I have no idea how to broadcast a message to a single user (the user who called the /msg, but there is no
-            //user with the username inputted.
-        }
+        return false;
     }
 
     synchronized private void broadcast(String message) {
@@ -203,7 +199,10 @@ final class ChatServer {
                     }
 
                 } else if (cm.getType() == 3) {
-                    directMessage(username + ": " + cm.getMessage(), cm.getRecipient());
+                   if (!directMessage(username + " -> " +cm.getRecipient() +": " + cm.getMessage(), cm.getRecipient())){
+                       System.out.println(sdf.format(date) + " The user " + cm.getRecipient() + " is not online.");
+                       directMessage(sdf.format(date) + " The user " + cm.getRecipient() + " is not online.",username);
+                   }
                 }
             }
         }

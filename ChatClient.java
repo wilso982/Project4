@@ -140,13 +140,14 @@ final class ChatClient {
             else if (message.length() > 4) {
                 if (message.substring(0, 4).equalsIgnoreCase("/msg")) {
                     String recipient;
-                    int end = 4;
-                    for (int i = 4; i < message.length(); i++) {
+                    int end = 5;
+                    for (int i = 5; i < message.length(); i++) {
                         if (message.charAt(i) == ' ') {
                             end = i;
+                            break;
                         }
                     }
-                    recipient = message.substring(4, end);
+                    recipient = message.substring(5, end);
                     message = message.substring(end);
 
                     client.sendMessage(new ChatMessage(message, 3, recipient));

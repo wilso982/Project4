@@ -23,7 +23,6 @@ public class ChatFilter {
         }
     }
 
-    //TODO: Make filter nicer like the other one and make it not case sensitive
 
     public String filter(String msg) {
         String messageArray[] = msg.split(" ");
