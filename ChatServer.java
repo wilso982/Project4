@@ -3,7 +3,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -16,6 +15,7 @@ final class ChatServer {
     Date date = new Date();
     SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
     private static String badwords;
+    ChatFilter filter = new ChatFilter(badwords);
 
 
 
@@ -60,7 +60,6 @@ final class ChatServer {
 
     synchronized private void broadcast(String message) {
         date = new Date();
-        ChatFilter filter = new ChatFilter(badwords);
         message = filter.filter(message);
         message = sdf.format(date) + " " + message + "\n";
 
@@ -155,7 +154,7 @@ final class ChatServer {
             // Read the username sent to you by client
             date = new Date();
             if (clients.size() > 1) {
-                for (int i = 0; i < clients.size(); i++) {
+                for (int i = 0; i < clients.size() - 1; i++) {
                     if (clients.get(i).username.equals(username)) {
                         System.out.println(sdf.format(date) + " " + username + ": tried connecting," +
                                 " but someone with the username already exists.");
@@ -182,7 +181,11 @@ final class ChatServer {
                 if (cm.getType() == 0) {
                     broadcast(username + ": " + cm.getMessage());
                 } else if (cm.getType() == 1) {
-                    System.out.println(sdf.format(date) + " " + username + " disconnected with a LOGOUT message.");
+                    if (cm.getMessage().isEmpty()) {
+                        System.out.println(sdf.format(date) + " " + username + " disconnected without a LOGOUT message.");
+                    } else {
+                        System.out.println(sdf.format(date) + " " + username + " disconnected with a LOGOUT message.");
+                    }
                     remove(id);
                     close();
                     return;
@@ -199,10 +202,15 @@ final class ChatServer {
                     }
 
                 } else if (cm.getType() == 3) {
-                   if (!directMessage(username + " -> " +cm.getRecipient() +": " + cm.getMessage(), cm.getRecipient())){
-                       System.out.println(sdf.format(date) + " The user " + cm.getRecipient() + " is not online.");
-                       directMessage(sdf.format(date) + " The user " + cm.getRecipient() + " is not online.",username);
-                   }
+                    if (!directMessage(username + " -> " + cm.getRecipient() +": " + cm.getMessage(), cm.getRecipient())){
+                        System.out.println(sdf.format(date) + " The user " + cm.getRecipient() + " is not online.");
+                        directMessage("The user " + cm.getRecipient() + " is not online.", username);
+                    } else {
+                        String message = filter.filter(cm.getMessage()) + "\n";
+                        System.out.println(sdf.format(date) + " " +
+                                username + " -> " + cm.getRecipient() + ": " + message);
+                        directMessage(username + " -> " + cm.getRecipient() +": " + cm.getMessage(), username);
+                    }
                 }
             }
         }

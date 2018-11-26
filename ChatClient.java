@@ -32,6 +32,7 @@ final class ChatClient {
             socket = new Socket(server, port);
         } catch (IOException e) {
             System.out.println("There is no server to connect to.");
+            return false;
         }
 
         // Create your input and output streams
@@ -101,8 +102,9 @@ final class ChatClient {
         }
         // Create your client and start it
         ChatClient client = new ChatClient(serverAddress, portNumber, username);
-        client.start();
-
+        if (!client.start()) {
+            return;
+        }
         Scanner input = new Scanner(System.in);
 
         String message = "";
@@ -148,7 +150,7 @@ final class ChatClient {
                         }
                     }
                     recipient = message.substring(5, end);
-                    message = message.substring(end);
+                    message = message.substring(end + 1);
 
                     client.sendMessage(new ChatMessage(message, 3, recipient));
                 } else {
